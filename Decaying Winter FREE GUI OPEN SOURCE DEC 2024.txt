@@ -1,0 +1,457 @@
+--[[ https://discord.gg/fWBngW2r5H ]]
+
+--[[ Universal variables ]]
+local game = game
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
+local character = localPlayer.Character
+local playerGui = localPlayer.PlayerGui
+local Mouse = localPlayer:GetMouse()
+local teleportService = game:GetService("TeleportService")
+local userInputService = game:GetService("UserInputService")
+local virtualInputManager = game:GetService("VirtualInputManager")
+local runService = game:GetService("RunService")
+local replicatedStorage = game:GetService("ReplicatedStorage")
+local guiService = game:GetService("GuiService")
+local tweenService = game:GetService("TweenService")
+local httpService = game:GetService("HttpService")
+local placeId = game.PlaceId
+local coreGui = game:GetService("CoreGui")
+local currentCamera = workspace.CurrentCamera
+local keyCode = Enum.KeyCode
+local instanceNew = Instance.new
+local uDim2New = UDim2.new
+local vector2New = Vector2.new
+local vector3New = Vector3.new
+local color3New = Color3.new
+local cFrameNew = CFrame.new
+
+--[[ Local Variables ]]
+local direction
+local closestMagnitude = math.huge
+local closestModel
+local wanteditem
+local weaponStats = require(game.Workspace.ServerStuff.Statistics["W_STATISTICS"])
+local classStats = require(workspace.ServerStuff.Statistics.CLASS_STATISTICS)
+local statusStats = require(workspace.ServerStuff.Statistics.S_STATISTICS)
+local knifetoggle1
+local knifetoggle2
+local snowballtoggle1
+local snowballtoggle2
+local izbucnitoggle1
+local izbucnitoggle2
+local healtoggle1
+local healtoggle2
+local foodtoggle1
+local foodtoggle2
+local items = {}
+for _,v in replicatedStorage.Weapons:GetChildren() do 
+    table.insert(items,v.Name)
+end
+--[[ functions ]]
+local function knife()
+    local Data = weaponStats["TKnife"]
+    workspace.ServerStuff.throwWeapon:FireServer("TKnife", 1000, direction, 0.19341856241226196, Data, 0)
+end
+
+local function Snowball()
+    local Data = weaponStats["Snowball"]
+    workspace.ServerStuff.throwWeapon:FireServer("Snowball", 1000, direction, 0.19341856241226196, Data, 0)
+end
+
+local function izbucni()
+    workspace.ServerStuff.dealDamage:FireServer("izbucni",{direction,0})
+end
+
+local function heal()
+    workspace.ServerStuff.dealDamage:FireServer("Regeneration")
+end
+
+local function food()
+    local decision = math.random(1,2)
+    if decision == 1 then
+        workspace.ServerStuff.dropAmmo:FireServer("rations","MRE")
+    else
+        workspace.ServerStuff.dropAmmo:FireServer("rations","Bottle")
+    end
+end
+
+local function spawnitem(item)
+    closestMagnitude = math.huge
+    closestModel = nil
+    for _, Model in workspace.Interactables:GetChildren() do
+        if (Model:GetPivot().Position - character:GetPivot().Position).Magnitude < closestMagnitude and Model.Name == "Workbench" then
+            closestMagnitude = (Model:GetPivot().Position - character:GetPivot().Position).Magnitude
+            closestModel = Model
+        end
+    end
+    character:PivotTo(closestModel:GetPivot() + vector3New(0, 5, 0))
+    game:GetService("ReplicatedStorage").Interactables.interaction:FireServer(closestModel,"workbenchblueprint"..item)
+    task.wait(2)
+    game:GetService("ReplicatedStorage").Interactables.interaction:FireServer(closestModel,"workbench")
+end
+
+--[[ Ui Library]]
+local repo = 'https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/'
+
+local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
+local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
+local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
+
+local Window = Library:CreateWindow({
+    Title = 'decaying winter',
+    Center = true,
+    AutoShow = true,
+    TabPadding = 8,
+    MenuFadeTime = 0.2
+})
+
+local Tabs = {
+    Main = Window:AddTab('Main'),
+    ['UI Settings'] = Window:AddTab('UI Settings'),
+}
+
+local LeftGroupBox = Tabs.Main:AddLeftGroupbox('Keybinds')
+LeftGroupBox:AddLabel('knife spam key'):AddKeyPicker('KeyPicker', {
+
+    Default = 'B',
+    SyncToggleState = false,
+
+
+    Mode = 'Toggle',
+
+    Text = 'knife spam',
+    NoUI = false, 
+
+
+    Callback = function(Value)
+        knifetoggle1 = Value
+    end,
+})
+
+LeftGroupBox:AddToggle('knifespam', {
+    Text = 'knifespam',
+    Default = false,
+    Tooltip = 'toggles knifespam on/off',
+
+    Callback = function(Value)
+        knifetoggle2 = Value
+    end
+})
+LeftGroupBox:AddDivider()
+LeftGroupBox:AddLabel('snowball spam'):AddKeyPicker('KeyPicker2', {
+
+    Default = 'N',
+    SyncToggleState = false,
+
+
+    Mode = 'Toggle',
+
+    Text = 'snowball spam',
+    NoUI = false, 
+
+
+    Callback = function(Value)
+        snowballtoggle1 = Value
+    end,
+})
+
+LeftGroupBox:AddToggle('snowballspam', {
+    Text = 'snowball spam',
+    Default = false,
+    Tooltip = 'you need to have thrown a snowball first for it to work',
+
+    Callback = function(Value)
+        snowballtoggle2 = Value
+    end
+})
+LeftGroupBox:AddDivider()
+LeftGroupBox:AddLabel('izbucni spam'):AddKeyPicker('KeyPicker3', {
+
+    Default = 'M',
+    SyncToggleState = false,
+
+
+    Mode = 'Toggle',
+
+    Text = 'izbucni spam',
+    NoUI = false, 
+
+
+    Callback = function(Value)
+        izbucnitoggle1 = Value
+    end,
+})
+
+LeftGroupBox:AddToggle('izbucnispam', {
+    Text = 'izbucni spam',
+    Default = false,
+    Tooltip = 'you need to be blitzer class',
+
+    Callback = function(Value)
+        izbucnitoggle2 = Value
+    end
+})
+LeftGroupBox:AddDivider()
+LeftGroupBox:AddLabel('heal spam'):AddKeyPicker('KeyPicker4', {
+
+    Default = 'L',
+    SyncToggleState = false,
+
+
+    Mode = 'Toggle',
+
+    Text = 'heal spam',
+    NoUI = false, 
+
+
+    Callback = function(Value)
+        healtoggle1 = Value
+    end,
+})
+
+LeftGroupBox:AddToggle('healspam', {
+    Text = 'heal spam',
+    Default = false,
+    Tooltip = 'toggles heal spam on/off',
+
+    Callback = function(Value)
+        healtoggle2 = Value
+    end
+})
+LeftGroupBox:AddDivider()
+LeftGroupBox:AddLabel('spawn food'):AddKeyPicker('KeyPicker5', {
+
+    Default = 'K',
+    SyncToggleState = false,
+
+
+    Mode = 'Toggle',
+
+    Text = 'spawn food',
+    NoUI = false, 
+
+
+    Callback = function(Value)
+        foodtoggle1 = Value
+    end,
+})
+
+LeftGroupBox:AddToggle('spawnfood', {
+    Text = 'spawn food',
+    Default = false,
+    Tooltip = 'toggles spawn food on/off',
+
+    Callback = function(Value)
+        foodtoggle2 = Value
+    end
+})
+
+local RightGroupBox = Tabs.Main:AddRightGroupbox('toggles/buttons')
+
+local MyButton = RightGroupBox:AddButton({
+    Text = 'Collect all presents',
+    Func = function()
+        for _,v in workspace.InteractablesNoDel.GrinchQuest.Gifts:GetChildren() do
+            replicatedStorage.Interactables.interaction:FireServer(v,"christmasgift")
+        end
+    end,
+    DoubleClick = false,
+    Tooltip = 'Collects all presents'
+})
+
+RightGroupBox:AddDropdown('ItemDropdown', {
+    Values = items,
+    Default = 1,
+    Multi = false,
+
+    Text = 'Item selection',
+    Tooltip = 'Item dropdown for spawning', 
+
+    Callback = function(Value)
+        wanteditem = Value
+    end
+})
+
+RightGroupBox:AddButton({
+    Text = 'spawn item',
+    Func = function()
+        spawnitem(wanteditem)
+    end,
+    DoubleClick = false,
+    Tooltip = 'spawn selected item'
+})
+
+RightGroupBox:AddButton({
+    Text = 'make all classes op',
+    Func = function()
+        for _,v in classStats do
+            v.basestats.backpack = true
+            v.basestats.atkmod = 10000
+            v.basestats.healthmod = 15000
+            v.basestats.defmod = 50000
+            v.basestats.stammod = 10000
+            v.basestats.shovemod = 2000
+            v.basestats.lightatkspeed = 1000
+            v.basestats.heavyatkspeed = 1000
+            v.basestats.recoilmod = 75
+            v.basestats.accmod = 75
+            v.basestats.reloadmod = 100
+            v.basestats.scavmod = 1000
+            v.basestats.mvtmod = 100
+            v.basestats.falldamagemod = true
+            v.basestats.cripple_immune =  true
+            v.basestats.frac_immune = true
+            v.basestats.bleed_imune = true
+            v.basestats.explosive_resist = true
+            v.basestats.exhaust_immune = true 
+            v.basestats.burnimmune = true 
+            v.basestats.fearless = true 
+            v.basestats.no_morale = true
+            v.basestats.no_aux = false
+            v.basestats.no_aim_mod = false
+        end
+    end,
+    DoubleClick = false,
+    Tooltip = 'makes all classes op'
+})
+
+RightGroupBox:AddButton({
+    Text = 'inf duration buffs',
+    Func = function()
+        statusStats.Crp.dur = 1
+        statusStats.Frac.dur = 1
+        statusStats.CrpPrv.dur = 100000
+        statusStats.Bld.dur = 1
+        statusStats.HeavBld.dur = 1
+        statusStats.Stealth.dur = 20
+        statusStats.BldPrv.dur = 100000
+        statusStats.Brn.dur = 1
+        statusStats.RespA.dur = 1
+        statusStats.GasM.dur = 100000
+        statusStats.BuffC.dur = 100000
+        statusStats.FireBuff.dur = 100000
+        statusStats.Exha.dur = 1
+        statusStats.VirusA.dur = 100000
+        statusStats.Exp.dur = 100000
+        statusStats.DMoraleA.dur = 1
+        statusStats.DMoraleB.dur = 1
+        statusStats.DMoraleC.dur = 1
+        statusStats.DMoraleD.dur = 1
+        statusStats.DMoraleE.dur = 1
+        statusStats.DMoraleF.dur = 1
+        statusStats.DMoraleG.dur = 1
+        statusStats.DMoraleH.dur = 1
+        statusStats.Scs.dur = 1
+        statusStats.Sus.dur = 1
+        statusStats.Psn.dur = 1
+        statusStats.Bnd.dur = 1
+        statusStats.Prc.dur = 100000
+        statusStats.Brz.dur = 100000
+        statusStats.Arm.dur = 100000
+        statusStats.Bls.dur = 100000
+        statusStats.AlkyA.dur = 100000
+        statusStats.ArtiB.dur = 100000
+        statusStats["3-(cbSTM)"].dur = 100000
+        statusStats["I4S-DS"].dur = 100000
+        statusStats["BL1 (Neloprephine)"].dur = 100000
+        statusStats["S44-UL1"].dur = 100000
+        statusStats.Rgn.dur = 100000
+        statusStats.Pnk.dur = 100000
+        statusStats.Snr.dur = 1
+        statusStats.Tnt.dur = 1
+        statusStats.Rge.dur = 100000
+        statusStats.Slc.dur = 100000
+    end,
+    DoubleClick = false,
+    Tooltip = 'makes all buffes have inf duration'
+})
+
+RightGroupBox:AddButton({
+    Text = 'dual wield any weapon',
+    Func = function()
+        for i, child in weaponStats do
+            if child then
+                if child.weapontype == "Gun" then
+                    if child.animset then
+                        child.animset = weaponStats.AJM.animset
+                    end
+                end
+            end
+        end
+    end,
+    DoubleClick = false,
+    Tooltip = 'makes it possible to dual wield any weapon'
+})
+
+Library:SetWatermarkVisibility(true)
+
+
+local FrameTimer = tick()
+local FrameCounter = 0;
+local FPS = 60;
+
+local WatermarkConnection = game:GetService('RunService').RenderStepped:Connect(function()
+    FrameCounter += 1;
+
+    if (tick() - FrameTimer) >= 1 then
+        FPS = FrameCounter;
+        FrameTimer = tick();
+        FrameCounter = 0;
+    end;
+
+    Library:SetWatermark(('LinoriaLib demo | %s fps | %s ms'):format(
+        math.floor(FPS),
+        math.floor(game:GetService('Stats').Network.ServerStatsItem['Data Ping']:GetValue())
+    ));
+end);
+
+Library.KeybindFrame.Visible = true;
+
+Library:OnUnload(function()
+    WatermarkConnection:Disconnect()
+
+    print('Unloaded!')
+    Library.Unloaded = true
+end)
+
+local MenuGroup = Tabs['UI Settings']:AddLeftGroupbox('Menu')
+
+MenuGroup:AddButton('Unload', function() Library:Unload() end)
+MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'End', NoUI = true, Text = 'Menu keybind' })
+
+Library.ToggleKeybind = Options.MenuKeybind 
+
+
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({ 'MenuKeybind' })
+ThemeManager:SetFolder('MyScriptHub')
+SaveManager:SetFolder('MyScriptHub/specific-game')
+SaveManager:BuildConfigSection(Tabs['UI Settings'])
+ThemeManager:ApplyToTab(Tabs['UI Settings'])
+SaveManager:LoadAutoloadConfig()
+
+--[[ Main code aka the renderstepped loop ]]
+runService.RenderStepped:Connect(function()
+    character = localPlayer.Character
+    Mouse.TargetFilter = workspace.NoTarget
+    direction = CFrame.new(character.PrimaryPart.CFrame:ToWorldSpace(CFrame.new(Vector3.new(math.random(-12, 12), math.random(-3, 12), 5))).Position, localPlayer:GetMouse().Hit.Position)
+    if knifetoggle1 and knifetoggle2 then
+        knife()
+    end
+    if snowballtoggle1 and snowballtoggle2 then
+        Snowball()
+    end
+    if izbucnitoggle1 and izbucnitoggle2 then
+        izbucni()
+    end
+    if healtoggle1 and healtoggle2 then
+        heal()
+    end
+    if foodtoggle1 and foodtoggle2 then
+        food()
+    end
+end)
+
